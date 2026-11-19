@@ -1,0 +1,8 @@
+Loaded 92103 candidate assignments from matching-ii.txt
+Greedy baseline: selected=7759 total=63313.022 valid=True
+Warm start from solved_matching_ii_v2.json: selected=8988 total=71248.539 valid=True
+CP-SAT status: FEASIBLE in 3305.4s
+CP-SAT solution: selected=9000 total=71399.989 valid=True
+Best objective bound: 75774.379
+Wrote solution to solved_matching_ii.json
+EXIT_CODE=0
