@@ -84,11 +84,21 @@ function used by the official ESA evaluator** (downloaded from
 
 | Metric | Matching I | Matching II |
 |---|---:|---:|
-| Selected assignments | 4,434 | 9,000 |
-| Total objective weight | 33,165.100 | 71,399.989 |
-| CP-SAT best known upper bound | 34,120.529 | 76,852.243 |
+| Selected assignments | 4,438 | 9,042 |
+| Total objective weight | 33,212.660 | 71,625.200 |
+| CP-SAT best known upper bound | 34,120.529 | 75,912.722 |
 | ESA public leaderboard (top score, as of Nov 2026) | 33,567.564 | 73,805.590 |
 | ESA public leaderboard (rank-3 score) | 33,563.803 | 73,798.601 |
+| Gap to rank-3 | ~351 (1.0%) | ~2,173 (2.9%) |
+
+After several hours of ILP search (including warm-started restarts and
+random-seed diversification once progress plateaued), both instances
+clearly entered diminishing returns: Matching I improved by only ~6 in
+the last hour of search, Matching II by ~53. The CP-SAT upper bound still
+leaves some headroom (rank-3 is within that bound for both problems), but
+closing the remaining gap would need a fundamentally different method
+(e.g. a dedicated Lagrangian-relaxation or branch-and-price approach for
+axial 3-dimensional matching) rather than more raw CP-SAT time.
 
 These numbers are reproducible locally: `python data/validate_official.py data/matching-i.txt data/solved_matching_i.json`
 runs the identical `fitness()` function shipped by ESA for this problem.

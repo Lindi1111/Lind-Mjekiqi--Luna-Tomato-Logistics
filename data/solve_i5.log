@@ -1,8 +1,0 @@
-Loaded 25000 candidate assignments from matching-i.txt
-Greedy baseline: selected=3870 total=29791.692 valid=True
-Warm start from solved_matching_i_v4.json: selected=4420 total=33104.900 valid=True
-CP-SAT status: FEASIBLE in 3301.7s
-CP-SAT solution: selected=4434 total=33165.100 valid=True
-Best objective bound: 34120.529
-Wrote solution to solved_matching_i.json
-EXIT_CODE=0

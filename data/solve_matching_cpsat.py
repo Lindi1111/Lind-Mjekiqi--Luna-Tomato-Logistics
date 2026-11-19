@@ -9,6 +9,7 @@ Usage:
 """
 import sys
 import json
+import os
 import time
 from collections import defaultdict
 
@@ -41,7 +42,42 @@ def validate_solution(rows, selected):
     return True, total
 
 
-def solve(rows, time_limit, num_workers=8, hint=None, log=True):
+class CheckpointCallback(cp_model.CpSolverSolutionCallback):
+    """Writes every improved incumbent solution to disk immediately, so a
+    killed/crashed background process never loses progress."""
+
+    def __init__(self, x_vars, rows, out_path, weights_int):
+        super().__init__()
+        self._x = x_vars
+        self._rows = rows
+        self._out_path = out_path
+        self._weights_int = weights_int
+        self._best = -1
+
+    def on_solution_callback(self):
+        obj = round(self.objective_value)
+        if obj <= self._best:
+            return
+        self._best = obj
+        selected = [i for i, v in enumerate(self._x) if self.value(v) == 1]
+        ok, total = validate_solution(self._rows, selected)
+        if not ok:
+            return
+        decision_vector = [0] * len(self._rows)
+        for i in selected:
+            decision_vector[i] = 1
+        tmp_path = self._out_path + ".tmp"
+        with open(tmp_path, "w") as f:
+            json.dump({
+                "decisionVector": decision_vector,
+                "total_weight": total,
+                "selected_count": len(selected),
+            }, f)
+        os.replace(tmp_path, self._out_path)
+        print(f"  [checkpoint] t={self.wall_time:.1f}s total={total:.3f} selected={len(selected)}", flush=True)
+
+
+def solve(rows, time_limit, out_path, num_workers=8, hint=None, log=True, random_seed=None):
     n = len(rows)
     model = cp_model.CpModel()
 
@@ -70,8 +106,11 @@ def solve(rows, time_limit, num_workers=8, hint=None, log=True):
     solver.parameters.max_time_in_seconds = time_limit
     solver.parameters.num_workers = num_workers
     solver.parameters.log_search_progress = log
+    if random_seed is not None:
+        solver.parameters.random_seed = random_seed
 
-    status = solver.solve(model)
+    callback = CheckpointCallback(x, rows, out_path, weights_int)
+    status = solver.solve(model, callback)
     selected = [i for i in range(n) if solver.value(x[i]) == 1]
     return selected, solver, status
 
@@ -97,6 +136,7 @@ def main():
     time_limit = float(sys.argv[3]) if len(sys.argv) > 3 else 600.0
     num_workers = int(sys.argv[4]) if len(sys.argv) > 4 else 8
     warm_json = sys.argv[5] if len(sys.argv) > 5 else None
+    random_seed = int(sys.argv[6]) if len(sys.argv) > 6 else None
 
     rows = load_matching(in_path)
     n = len(rows)
@@ -117,7 +157,9 @@ def main():
             hint_sel = prev_sel
 
     t0 = time.time()
-    selected, solver, status = solve(rows, time_limit=time_limit, num_workers=num_workers, hint=hint_sel, log=False)
+    selected, solver, status = solve(rows, time_limit=time_limit, out_path=out_path,
+                                      num_workers=num_workers, hint=hint_sel, log=False,
+                                      random_seed=random_seed)
     print(f"CP-SAT status: {solver.status_name(status)} in {time.time()-t0:.1f}s")
 
     ok, total = validate_solution(rows, selected)
