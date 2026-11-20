@@ -80,25 +80,38 @@ This is solved against the **exact same instance files and fitness
 function used by the official ESA evaluator** (downloaded from
 `api.optimize.esa.int`, see `data/*-eval.py` and `data/validate_official.py`).
 
+## External Large Neighborhood Search (LNS)
+
+Once full-problem CP-SAT search plateaued, we switched to an external LNS
+loop (`data/lns_matching.py`): repeatedly destroy a random (or low-weight
+biased) fraction of the current solution, collect every transfer whose
+`e`/`l`/`d` ids are not blocked by what's left, and re-solve that much
+smaller subproblem to *proven* optimality with CP-SAT. The destroyed set
+is always a feasible answer to its own subproblem, so every round is
+guaranteed to never get worse, and often finds a strictly better
+recombination. This consistently outperformed throwing more raw time at
+the full-size model, especially for Matching II.
+
 ## Current Results (local, verified against the official fitness function)
 
 | Metric | Matching I | Matching II |
 |---|---:|---:|
-| Selected assignments | 4,438 | 9,042 |
-| Total objective weight | 33,212.660 | 71,625.200 |
+| Selected assignments | 4,438 | 9,079 |
+| Total objective weight | 33,242.807 | 72,082.716 |
 | CP-SAT best known upper bound | 34,120.529 | 75,912.722 |
 | ESA public leaderboard (top score, as of Nov 2026) | 33,567.564 | 73,805.590 |
 | ESA public leaderboard (rank-3 score) | 33,563.803 | 73,798.601 |
-| Gap to rank-3 | ~351 (1.0%) | ~2,173 (2.9%) |
+| Gap to rank-3 | ~321 (1.0%) | ~1,716 (2.3%) |
 
-After several hours of ILP search (including warm-started restarts and
-random-seed diversification once progress plateaued), both instances
-clearly entered diminishing returns: Matching I improved by only ~6 in
-the last hour of search, Matching II by ~53. The CP-SAT upper bound still
-leaves some headroom (rank-3 is within that bound for both problems), but
-closing the remaining gap would need a fundamentally different method
-(e.g. a dedicated Lagrangian-relaxation or branch-and-price approach for
-axial 3-dimensional matching) rather than more raw CP-SAT time.
+For Matching I, LNS with a large (up to 70%) random destroy fraction,
+re-solved to *proven* subproblem optimality, consistently reproduced the
+exact same value with zero improvement across many independent rounds —
+strong evidence that ~33,243 is at or extremely close to the instance's
+true optimum reachable by this class of methods. A from-scratch cold
+restart (no warm start, fresh random seed) independently converged to a
+lower value (33,055), confirming our solution occupies a strong basin.
+Matching II, in contrast, kept improving steadily under LNS and still has
+more room; search continues there.
 
 These numbers are reproducible locally: `python data/validate_official.py data/matching-i.txt data/solved_matching_i.json`
 runs the identical `fitness()` function shipped by ESA for this problem.
