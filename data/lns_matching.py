@@ -134,10 +134,15 @@ def main():
     improved_rounds = 0
 
     while time.time() - t0 < total_time:
-        new_selected, n_free, n_cand = lns_round(
-            rows, selected, rng, destroy_frac, sub_time_limit, num_workers=4, targeted=targeted
-        )
-        ok, new_total = validate_solution(rows, list(new_selected))
+        try:
+            new_selected, n_free, n_cand = lns_round(
+                rows, selected, rng, destroy_frac, sub_time_limit, num_workers=4, targeted=targeted
+            )
+            ok, new_total = validate_solution(rows, list(new_selected))
+        except Exception as ex:
+            print(f"  [round {rounds}] exception, skipping round: {ex!r}", flush=True)
+            rounds += 1
+            continue
         rounds += 1
         if ok and new_total > best_total + 1e-9:
             improved_rounds += 1
